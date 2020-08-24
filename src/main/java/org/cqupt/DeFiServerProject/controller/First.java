@@ -22,7 +22,7 @@ public class First {
 	 * 现有这个耦合度太高
 	 * */
 	@CrossOrigin(origins = "http://localhost:9527")
-	@RequestMapping(value = "/getData", produces = "application/json;charset=UTF-8")
+	@RequestMapping(value = "/getTestData", produces = "application/json;charset=UTF-8")
     @ResponseBody
     public String getData() {
 		System.out.println("接收请求");
