@@ -51,33 +51,64 @@ public class GetWalletData {
 			responseStr = HttpClient.doGet(baseURL+"addr/b/eth/"+ETHStr);
 			JSONObject responseJsonObj = JSONObject.fromObject(responseStr);
 			int code = (Integer)responseJsonObj.get("code");
-			String data = (String)responseJsonObj.get("data");
-			System.out.println("code"+code);
-			System.out.println("data"+data);
 			
-			if(code==1) {
-				responseMap = new HashMap<>();
+			responseMap = new HashMap<>();
+			if(code==1 ) {
+				//接口调用成功
+				String trueBalance = (String)responseJsonObj.get("data");
+				
 				responseMap.put("code", 20000);
-				responseMap.put("data", data);
+				responseMap.put("data", trueBalance);
+			}else {
+				responseMap.put("code", 50000);
+				responseMap.put("msg", "请求失败!");
 			}
 			
 		} else if(RequestType==2 ) {
 			//RequestType=2 查询账户代币余额
 			System.out.println("请求地址|||"+baseURL+"eth/address/tokenbalance/"+ETHStr);
 			responseStr = HttpClient.doGet(baseURL+"eth/address/tokenbalance/"+ETHStr);
+			
 			JSONObject responseJsonObj = JSONObject.fromObject(responseStr);
-			JSONArray dataArr = (JSONArray) responseJsonObj.get("data");
-			JSONObject data = dataArr.getJSONObject(0);
-			String network = (String)data.get("network");
-			String hash = (String)data.get("hash");
-			int transferCnt = (Integer)data.get("transferCnt");
-			String balance = (String)data.get("balance");
-			JSONObject tokenInfo = (JSONObject) data.get("tokenInfo");
-			String tokenInfo_h = (String)tokenInfo.get("h");
-			String tokenInfo_f = (String)tokenInfo.get("f");
-			String tokenInfo_s = (String)tokenInfo.get("s");
-			String tokenInfo_d = (String)tokenInfo.get("d");
-			System.out.println(network+"||"+hash+"||"+transferCnt+"||"+balance+"||"+tokenInfo_h+"||"+tokenInfo_f+"||"+tokenInfo_s+"||"+tokenInfo_d);
+			int code = (Integer)responseJsonObj.get("code");
+			responseMap = new HashMap<>();
+			if(code==1 ) {
+				//接口调用成功
+				JSONArray dataArr = (JSONArray) responseJsonObj.get("data");//API返回数据
+				JSONArray dataArray = new JSONArray();//处理后结果
+				for (int i=0; i<3; i++) {//dataArr.size()
+					JSONObject data = dataArr.getJSONObject(i);
+					String network = (String)data.get("network");//ETH
+					String hash = (String)data.get("hash");
+					int transferCnt = (Integer)data.get("transferCnt");//交易该代币的笔数
+					String balanceStr = (String)data.get("balance");//账户余额  （需要除以10的decimals次方才是真实余额）例：138411529944918/10e6 =1 3841 1529.944918
+					JSONObject tokenInfo = (JSONObject) data.get("tokenInfo");
+					//String tokenInfo_h = (String)tokenInfo.get("h");
+					String tokenInfo_f = (String)tokenInfo.get("f");//代币全称
+					String tokenInfo_s = (String)tokenInfo.get("s");//代币单位符号
+					String tokenInfo_d = (String)tokenInfo.get("d");//代币精度  6
+					//计算真实余额
+					double balance = Double.parseDouble( balanceStr);
+					System.out.println("balanceStr="+balanceStr);
+					double d = Double.parseDouble(tokenInfo_d);
+					System.out.println("代币精度="+d);
+					double trueBalance = balance/(10^(int)d);
+					
+					JSONObject infoObj = new JSONObject();
+					infoObj.put("index", i);
+					//infoObj.put("network", network);
+					infoObj.put("hash", hash);
+					infoObj.put("transferCnt", transferCnt);
+					infoObj.put("trueBalance", trueBalance);
+					infoObj.put("fullName", tokenInfo_f);
+					infoObj.put("unit", tokenInfo_s);
+					dataArray.add(infoObj);//插入json数组
+					System.out.println(network+"||"+hash+"||"+transferCnt+"||"+trueBalance+"||"+tokenInfo_f+"||"+tokenInfo_s);
+				}
+				responseMap.put("code", 20000);
+				responseMap.put("data", dataArray);
+				
+			}
 		}
 		/**
 		 * 代币账户余额
@@ -100,12 +131,12 @@ public class GetWalletData {
 		 * 0x519475b31653e46d20cd09f9fdcf3b12bdacb4f5
 		 * https://api.etherscan.io/api?module=account&action=balance&address=0x1062a747393198f70f71ec65a582423dba7e5ab3&tag=latest
 		 */
-		//String rsp = HttpClient.doGet("http://www.tokenview.com:8088/eth/address/tokenbalance/0x519475b31653e46d20cd09f9fdcf3b12bdacb4f5");
 		
 		ObjectMapper mapper = new ObjectMapper();
 		String resultString = "";
 		try {
 			resultString = mapper.writeValueAsString(responseMap);
+			System.out.println("resultString||="+resultString);
 		} catch (JsonProcessingException e) {
 		    e.printStackTrace();
 		}
