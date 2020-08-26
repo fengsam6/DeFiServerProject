@@ -11,6 +11,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -18,11 +19,12 @@ import java.util.Map;
  */
 public class TableHelperUtils {
     private static Logger logger = LoggerFactory.getLogger(TableHelperUtils.class);
-        private static JdbcTemplate jdbcTemplate = SpringApplicationUtils.getBean(JdbcTemplate.class);
+    private static JdbcTemplate jdbcTemplate = SpringApplicationUtils.getBean(JdbcTemplate.class);
+    private static final String dataBaseName = "loveapp_databases";
 
-    public  static  boolean createTableByData(String tableName, Map<String, Object> dataResultMap) {
-        String dataBaseName="loveapp_databases";
-        return createTableByData( dataBaseName, tableName, dataResultMap);
+    public static boolean createTableByData(String tableName, Map<String, Object> dataResultMap) {
+
+        return createTableByData(dataBaseName, tableName, dataResultMap);
     }
 
     public static boolean createTableByData(String tableName, String apiUrl) {
@@ -135,5 +137,88 @@ public class TableHelperUtils {
         String sql = "use  #1";
         sql = sql.replaceFirst("#1", "`" + dataBaseName + "`");
         jdbcTemplate.execute(sql);
+    }
+
+
+    public static boolean insertTable(String dataBaseName, String tableName, Object value, Map<String, ColumnInfo> ColumnInfoMap) {
+
+        if (StringUtils.isEmpty(tableName) || value == null) {
+            throw new AppException("101", "配置信息错误，向表添加数据失败！");
+        }
+        StringBuilder sqlStringBuilder = new StringBuilder();
+        sqlStringBuilder.append("insert into " + tableName + " values(");
+        useDataBase(dataBaseName);
+        StringBuilder stringBuilder = new StringBuilder(value.toString());
+        sqlStringBuilder.append(stringBuilder.deleteCharAt(0).deleteCharAt(stringBuilder.lastIndexOf("]")));
+        sqlStringBuilder.append(")");
+        return jdbcTemplate.update(sqlStringBuilder.toString()) > 0;
+    }
+
+
+    public static boolean insertListTable(String dataBaseName, String tableName, List<Map<String, Object>> columnValueMaps) {
+        int len = columnValueMaps.size();
+        for (int i = 0; i < len; i++) {
+            if (!insertTable(dataBaseName, tableName, columnValueMaps.get(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean insertListTable(String tableName, List<Map<String, Object>> columnValueMaps) {
+        return insertListTable(dataBaseName, tableName, columnValueMaps);
+    }
+
+    public static boolean synTableData(String apiUrl, String tableName) {
+        Map<String, Object> dataResultMap = ApiHelperUtils.resolveApi(apiUrl);
+        if(dataResultMap instanceof List){
+            List<Map<String, Object>> columnValueMaps = (List<Map<String, Object>>) dataResultMap;
+            return insertListTable(tableName,columnValueMaps);
+        }else{
+            return insertOneTable( tableName, dataResultMap);
+        }
+
+    }
+
+    public static boolean insertOneTable(String tableName, Map<String, Object> columnValueMap) {
+        return insertTable(dataBaseName, tableName, columnValueMap);
+    }
+
+    public static boolean insertTable(String dataBaseName, String tableName, Map<String, Object> columnValueMap) {
+        if (StringUtils.isEmpty(tableName) || CollectionUtils.isEmpty(columnValueMap)) {
+            throw new AppException("500", "获取列数据失败，向表中添加数据失败！");
+        }
+        tableName = tableName.trim();
+        StringBuilder sqlStringBuilder = new StringBuilder();
+        useDataBase(dataBaseName);
+        sqlStringBuilder.append("insert into  " + "`" + tableName + "`" + "(");
+        //拼接插入表字段
+        for (String column : columnValueMap.keySet()) {
+            sqlStringBuilder.append(" `" + column + "`, ");
+        }
+        //去掉插入表字段最后一个字符
+        sqlStringBuilder.deleteCharAt(sqlStringBuilder.lastIndexOf(","));
+
+        sqlStringBuilder.append(") VALUES( ");
+
+        for (Object columnValue : columnValueMap.values()) {
+            //判断列类型是否是整数
+            if (columnValue instanceof Integer) {
+                if (StringUtils.isEmpty(columnValue)) {
+                    columnValue = 0 + "";
+                }
+                sqlStringBuilder.append(" " + columnValue + ", ");
+            } else
+                sqlStringBuilder.append(" '" + columnValue + "', ");
+        }
+        //去掉插入表值最后一个字符
+        sqlStringBuilder.deleteCharAt(sqlStringBuilder.lastIndexOf(","));
+        sqlStringBuilder.append(") ;");
+
+        String sql = sqlStringBuilder.toString();
+        if (logger.isDebugEnabled()) {
+            logger.info(sql);
+        }
+        return jdbcTemplate.update(sql) > 0;
     }
 }

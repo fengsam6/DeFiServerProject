@@ -17,6 +17,15 @@ public class InitTableUtils {
         TableHelperUtils.createTableByData("market",apiUrl);
     }
 
+    /**
+     * 将url返回数据插入数据库中
+     */
+    @Test
+    public  void SynMarketTableData() {
+        String  apiUrl = "http://www.tokenview.com:8088/market/exchange";
+        TableHelperUtils.synTableData(apiUrl,"market");
+    }
+
 
     /**
      * 数字货币行情
@@ -25,5 +34,15 @@ public class InitTableUtils {
     public  void createMarketInfoTable() {
         String  apiUrl = "http://www.tokenview.com:8088/coin/marketInfo/btc";
         TableHelperUtils.createTableByData("marketInfo",apiUrl);
+    }
+
+
+    /**
+     * 将url返回数据插入数据库中
+     */
+    @Test
+    public  void SynMarketInfoTableData() {
+        String  apiUrl = "http://www.tokenview.com:8088/coin/marketInfo/btc";
+        TableHelperUtils.synTableData(apiUrl,"marketInfo");
     }
 }
