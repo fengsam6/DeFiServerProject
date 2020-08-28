@@ -20,4 +20,28 @@ public class ApiHelperUtils {
       }
       return dataResult;
     }
+
+
+    /**
+     * 解析请求url,根据data创建表
+     * @param tableName
+     * @param apiUrl
+     * @return
+     */
+    public static boolean createTableByApiUrl( String apiUrl,String tableName) {
+        Map<String, Object> dataResultMap = ApiHelperUtils.resolveApi(apiUrl);
+        return TableHelperUtils.createTableByData(tableName, dataResultMap);
+    }
+
+
+    /**
+     * 解析url返回数据，根据返回数据，建表、插入数据库
+     */
+    public static  void resolveUrlToTable(String url,String tableName) {
+        String  apiUrl = "http://www.tokenview.com:8088/market/exchange";
+        if(!TableHelperUtils.isTableExist(tableName)){
+             createTableByApiUrl(url,tableName);
+        }
+        TableHelperUtils.synTableData(apiUrl,tableName);
+    }
 }

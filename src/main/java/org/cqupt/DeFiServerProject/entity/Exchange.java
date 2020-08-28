@@ -1,6 +1,9 @@
 package org.cqupt.DeFiServerProject.entity;
 
-public class Mark {
+/**
+ * 税率
+ */
+public class Exchange {
     private String name;
     private String exchange;
     private String getdate;
@@ -38,13 +41,13 @@ public class Mark {
         this.hashcode = hashcode;
     }
 
-    public Mark(String name, String exchange, String getdate, String hashcode) {
+    public Exchange(String name, String exchange, String getdate, String hashcode) {
         this.name = name;
         this.exchange = exchange;
         this.getdate = getdate;
         this.hashcode = hashcode;
     }
 
-    public Mark() {
+    public Exchange() {
     }
 }

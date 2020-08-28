@@ -1,7 +1,7 @@
 package org.cqupt.DeFiServerProject.common.dataHelper;
 
-import org.cqupt.DeFiServerProject.entity.Mark;
-import org.cqupt.DeFiServerProject.service.MarkService;
+import org.cqupt.DeFiServerProject.entity.Exchange;
+import org.cqupt.DeFiServerProject.service.ExchangeService;
 import org.cqupt.DeFiServerProject.util.ApiHelperUtils;
 import org.cqupt.DeFiServerProject.util.DataConvertUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,19 +13,19 @@ import java.util.Map;
 @Service
 public class DataHelperService {
     @Autowired
-    private MarkService markService;
+    private ExchangeService exchangeService;
 
     /**
-     * 从URL拉去数据，存在表mark中，
+     * 解析请求url，将url返回数据存在表mark中，
      * 需要先建表
      * @param url
      * @return
      */
     public boolean pullData(String url) {
         Map<String, Object> dataMap = ApiHelperUtils.resolveApi(url);
-        List<Mark> markList = DataConvertUtils.mapConvertMark(dataMap);
-        markList.forEach((m) -> {
-            markService.save(m);
+        List<Exchange> exchangeList = DataConvertUtils.mapConvertMark(dataMap);
+        exchangeList.forEach((m) -> {
+            exchangeService.save(m);
         });
         return true;
     }

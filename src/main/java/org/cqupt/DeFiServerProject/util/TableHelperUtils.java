@@ -27,11 +27,14 @@ public class TableHelperUtils {
         return createTableByData(dataBaseName, tableName, dataResultMap);
     }
 
-    public static boolean createTableByData(String tableName, String apiUrl) {
-        Map<String, Object> dataResultMap = ApiHelperUtils.resolveApi(apiUrl);
-        return createTableByData(tableName, dataResultMap);
-    }
 
+    /**
+     * 如果表列过多，可以将长度调小
+     * @param dataBaseName
+     * @param tableName
+     * @param dataResultMap
+     * @return
+     */
     public static boolean createTableByData(String dataBaseName, String tableName, Map<String, Object> dataResultMap) {
         if (CollectionUtils.isEmpty(dataResultMap)) {
             throw new AppException("500", "数据不能为空");
@@ -43,7 +46,7 @@ public class TableHelperUtils {
 
             ColumnInfo columnInfo = new ColumnInfo();
             String columnType = null;
-            int length = 80;
+            int length = 10;
             if (columnValueObj instanceof Integer) {
                 columnType = "int";
             } else {
@@ -51,7 +54,7 @@ public class TableHelperUtils {
                 String columnValue = columnValueObj + "";
                 length = columnValue.length();
                 //增加40，确保其他插入数据长度够
-                length = length + 30;
+                length = length + 10;
                 if (length > 255) {
                     columnType = "text";
                 }
@@ -65,6 +68,26 @@ public class TableHelperUtils {
             columnInfoMap.put(columnName, columnInfo);
         }
         return createTable(dataBaseName, tableName, columnInfoMap);
+    }
+
+    public static boolean isTableExist( String tableName) {
+        return isTableExist(dataBaseName,tableName);
+    }
+    public static boolean isTableExist(String dataBaseName, String tableName) {
+        if (StringUtils.isEmpty(tableName) || StringUtils.isEmpty(dataBaseName)) {
+            throw new AppException("500", "数据库名称或表名称不能为空！");
+        }
+        if (!isDataBaseExist(dataBaseName)) {
+            System.out.println("数据库" + dataBaseName + "不存在。");
+            return false;
+        }
+        dataBaseName = dataBaseName.trim();
+        tableName = tableName.trim();
+        String sql = "select COUNT(*) from information_schema.tables WHERE  table_schema = #1 and table_name = #2";
+        sql = sql.replaceFirst("#1", "'" + dataBaseName + "'");
+        sql = sql.replaceFirst("#2", "'" + tableName + "'");
+        int count = jdbcTemplate.queryForObject(sql, Integer.class);
+        return count > 0;
     }
 
     public static boolean createTable(String dataBaseName, String tableName, Map<String, ColumnInfo> columnInfoMap) {
@@ -133,6 +156,10 @@ public class TableHelperUtils {
         jdbcTemplate.execute(sql);
     }
 
+    /**
+     * 切换数据库
+     * @param dataBaseName
+     */
     public static void useDataBase(String dataBaseName) {
         String sql = "use  #1";
         sql = sql.replaceFirst("#1", "`" + dataBaseName + "`");
@@ -140,22 +167,34 @@ public class TableHelperUtils {
     }
 
 
+    /**
+     * 将map数据插入数据库中（map数据需要与表格列对应）
+     * @param dataBaseName
+     * @param tableName
+     * @param value
+     * @param ColumnInfoMap
+     * @return
+     */
     public static boolean insertTable(String dataBaseName, String tableName, Object value, Map<String, ColumnInfo> ColumnInfoMap) {
 
         if (StringUtils.isEmpty(tableName) || value == null) {
             throw new AppException("101", "配置信息错误，向表添加数据失败！");
         }
+        useDataBase(dataBaseName);
+
         StringBuilder sqlStringBuilder = new StringBuilder();
         sqlStringBuilder.append("insert into " + tableName + " values(");
-        useDataBase(dataBaseName);
         StringBuilder stringBuilder = new StringBuilder(value.toString());
         sqlStringBuilder.append(stringBuilder.deleteCharAt(0).deleteCharAt(stringBuilder.lastIndexOf("]")));
         sqlStringBuilder.append(")");
-        return jdbcTemplate.update(sqlStringBuilder.toString()) > 0;
+
+        String sql = sqlStringBuilder.toString();
+        logger.info(sql);
+        return jdbcTemplate.update(sql) > 0;
     }
 
 
-    public static boolean insertListTable(String dataBaseName, String tableName, List<Map<String, Object>> columnValueMaps) {
+    public static boolean insertTableBatch(String dataBaseName, String tableName, List<Map<String, Object>> columnValueMaps) {
         int len = columnValueMaps.size();
         for (int i = 0; i < len; i++) {
             if (!insertTable(dataBaseName, tableName, columnValueMaps.get(i))) {
@@ -165,15 +204,21 @@ public class TableHelperUtils {
         return true;
     }
 
-    public static boolean insertListTable(String tableName, List<Map<String, Object>> columnValueMaps) {
-        return insertListTable(dataBaseName, tableName, columnValueMaps);
+    /**
+     * 批量插入
+     * @param tableName
+     * @param columnValueMaps
+     * @return
+     */
+    public static boolean insertTableBatch(String tableName, List<Map<String, Object>> columnValueMaps) {
+        return insertTableBatch(dataBaseName, tableName, columnValueMaps);
     }
 
     public static boolean synTableData(String apiUrl, String tableName) {
         Map<String, Object> dataResultMap = ApiHelperUtils.resolveApi(apiUrl);
         if(dataResultMap instanceof List){
             List<Map<String, Object>> columnValueMaps = (List<Map<String, Object>>) dataResultMap;
-            return insertListTable(tableName,columnValueMaps);
+            return insertTableBatch(tableName,columnValueMaps);
         }else{
             return insertOneTable( tableName, dataResultMap);
         }
@@ -184,6 +229,13 @@ public class TableHelperUtils {
         return insertTable(dataBaseName, tableName, columnValueMap);
     }
 
+    /**
+     * 根据columnValueMap，插入数据
+     * @param dataBaseName
+     * @param tableName
+     * @param columnValueMap
+     * @return
+     */
     public static boolean insertTable(String dataBaseName, String tableName, Map<String, Object> columnValueMap) {
         if (StringUtils.isEmpty(tableName) || CollectionUtils.isEmpty(columnValueMap)) {
             throw new AppException("500", "获取列数据失败，向表中添加数据失败！");
@@ -216,9 +268,7 @@ public class TableHelperUtils {
         sqlStringBuilder.append(") ;");
 
         String sql = sqlStringBuilder.toString();
-        if (logger.isDebugEnabled()) {
-            logger.info(sql);
-        }
+        logger.info(sql);
         return jdbcTemplate.update(sql) > 0;
     }
 }

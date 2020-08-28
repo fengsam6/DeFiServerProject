@@ -14,7 +14,9 @@ public class DataHelperServiceInit {
 private DataHelperService dataHelperService;
 
     /**
-     * 同步markData
+     * 解析请求url，将url返回数据存在表exchange中，
+     * 需要先执行sql建表
+     * 如果需要定时获取数据（或者需要http请求），再开发一层接口，调用dataHelperService
      */
     @Test
     public void pullMartData() {

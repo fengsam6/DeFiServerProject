@@ -1,6 +1,6 @@
 package org.cqupt.DeFiServerProject.TableHelper;
 import org.cqupt.DeFiServerProject.DeFiServerProjectApplication;
-import org.cqupt.DeFiServerProject.util.TableHelperUtils;
+import org.cqupt.DeFiServerProject.util.ApiHelperUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -14,16 +14,16 @@ public class InitTableUtils {
     @Test
     public  void createMarketTable() {
         String  apiUrl = "http://www.tokenview.com:8088/market/exchange";
-        TableHelperUtils.createTableByData("market",apiUrl);
+        ApiHelperUtils.createTableByApiUrl(apiUrl,"market");
     }
 
     /**
-     * 将url返回数据插入数据库中
+     * 将url返回数据插入数据库中(如果表不存在，根据返回map建表)
      */
     @Test
     public  void SynMarketTableData() {
         String  apiUrl = "http://www.tokenview.com:8088/market/exchange";
-        TableHelperUtils.synTableData(apiUrl,"market");
+        ApiHelperUtils.resolveUrlToTable(apiUrl,"market");
     }
 
 
@@ -33,16 +33,16 @@ public class InitTableUtils {
     @Test
     public  void createMarketInfoTable() {
         String  apiUrl = "http://www.tokenview.com:8088/coin/marketInfo/btc";
-        TableHelperUtils.createTableByData("marketInfo",apiUrl);
+        ApiHelperUtils.createTableByApiUrl(apiUrl,"marketInfo");
     }
 
 
     /**
-     * 将url返回数据插入数据库中
+     * 将url返回数据插入数据库中(如果表不存在，根据返回map建表)
      */
     @Test
     public  void SynMarketInfoTableData() {
         String  apiUrl = "http://www.tokenview.com:8088/coin/marketInfo/btc";
-        TableHelperUtils.synTableData(apiUrl,"marketInfo");
+        ApiHelperUtils.resolveUrlToTable(apiUrl,"marketInfo");
     }
 }
